@@ -10,11 +10,11 @@ Includes a script `process.py` to transform CSV files containing demographic and
 ## Usage
 
 ### Environment Setup
-    1. Make sure you have [Anaconda or Miniconda](https://conda.io/docs/download.html) installed.
-  2. Clone repo with `https://github.com/stanfordmlgroup/risk-adjustment-ml`.
-  3. Go into the cloned repo: `cd risk-adjustment-ml`.
-  4. Create the environment: `conda env create -f environment.yml`.
-  5. Activate the environment: `source activate ra-ml`.
+    1. Please have [Anaconda or Miniconda](https://conda.io/docs/download.html) installed to create a Python virtual environment.
+    2. Clone repo with `https://github.com/stanfordmlgroup/risk-adjustment-ml`.
+    3. Go into the cloned repo: `cd risk-adjustment-ml`.
+    4. Create the environment: `conda env create -f environment.yml`.
+    5. Activate the environment: `source activate ra-ml`.
 
 ### Processing
 > Demographics: CSV with Patient ID, Age, Sex, [Optional] ZIP (age is an integer, sex is M/F, ZIP is 5-digit)  Diagnoses: CSV with Patient ID, ICD-10 Diagnosis. One row per diagnosis.
