@@ -6,7 +6,8 @@ Based on the paper:
   >
   > Jeremy A. Irvin, Andrew A. Kondrich, Michael Ko, Pranav Rajpurkar, Behzad Haghgoo, Bruce E. Landon, Robert Phillips, Stephen Petterson, Andrew Y. Ng, Sanjay Basu 
 
-Includes a script `process.py` to transform CSV files containing demographic and diagnoses information into processed inputs for learning models, and `model.py` which trains a lightgbm model using 3-fold CV on such formatted data.
+Includes a script `preprocess.py` to transform CSV files containing demographic and diagnoses information into processed inputs for learning models, and `train.py` which trains a LightGBM model using 3-fold CV on this formatted data.
+
 ## Usage
 
 ### Environment Setup
@@ -16,7 +17,7 @@ Includes a script `process.py` to transform CSV files containing demographic and
 4. Create the environment: `conda env create -f environment.yml`.
 5. Activate the environment: `source activate ra-ml`.
 
-### Processing
+### Preprocessing
 > Demographics: CSV with Patient ID, Age, Sex, [Optional] ZIP (age is an integer, sex is M/F, ZIP is 5-digit)  Diagnoses: CSV with Patient ID, ICD-10 Diagnosis. One row per diagnosis.
 
 ### Modeling
