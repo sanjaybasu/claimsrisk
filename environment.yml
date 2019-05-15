@@ -1,6 +1,5 @@
 name: ra-ml
 channels:
-  - pytorch
   - anaconda
   - r
   - conda-forge
