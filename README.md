@@ -10,7 +10,7 @@ Includes a script `process.py` to transform CSV files containing demographic and
 ## Usage
 
 ### Environment Setup
-    1. Please have [Anaconda or Miniconda](https://conda.io/docs/download.html) installed to create a Python virtual environment.
+    1. Please have [Anaconda](https://docs.conda.io/en/latest/miniconda.html) installed to create a Python virtual environment.
     2. Clone repo with `https://github.com/stanfordmlgroup/risk-adjustment-ml`.
     3. Go into the cloned repo: `cd risk-adjustment-ml`.
     4. Create the environment: `conda env create -f environment.yml`.
