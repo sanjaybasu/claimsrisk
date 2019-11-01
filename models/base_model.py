@@ -2,7 +2,7 @@
 import importlib
 import numpy as np
 
-reg_metrics = importlib.import_module("aihc-stats.stats.regression_metrics")
+#reg_metrics = importlib.import_module("aihc-stats.stats.regression_metrics")
 
 
 class BaseModel(object):

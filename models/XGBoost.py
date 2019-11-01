@@ -6,7 +6,7 @@ from hyperopt.mongoexp import MongoTrials
 
 from .base_model import BaseModel
 
-reg_metrics = importlib.import_module("aihc-stats.stats.regression_metrics")
+#reg_metrics = importlib.import_module("aihc-stats.stats.regression_metrics")
 
 
 def generate_objective(dataset, model, pbar):
