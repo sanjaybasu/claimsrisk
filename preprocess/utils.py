@@ -8,7 +8,29 @@ import dask.dataframe as dd
 import numpy as np
 
 
+AGE_CUTOFFS = [25, 35, 45, 55, 60, 65]
+NUM_AGE_BUCKETS = len(AGE_CUTOFFS)
 ccs_path = "preprocess/icd10cm_to_ccs.csv"
+
+def sex_age_bucketer(age, sex):
+    """Assign an index of an age-sex bucket to an age and sex.
+    F [0, 2) is index 0.
+    F [2, 6) is index 1.
+    ...
+    M [0, 2) is index num_age_buckets
+    M [2, 6) is index num_age_buckets + 1
+    ...
+    age is between 0 and 94, sex is either 0 (female) or 1 (male).
+    """
+    index = 0
+    for age_cutoff in AGE_CUTOFFS:
+        if age < age_cutoff:
+            return index + sex * NUM_AGE_BUCKETS
+        index += 1
+
+    print("Warning: Age outside of [0, 95). Treating as final age bucket.")
+    return (index - 1) + sex * NUM_AGE_BUCKETS
+
 
 def load_icd2ccs(path):
 
