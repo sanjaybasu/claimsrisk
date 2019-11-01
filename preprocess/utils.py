@@ -7,7 +7,24 @@ import scipy.sparse as sparse
 import dask.dataframe as dd
 import numpy as np
 
-from constants import *
+
+ccs_path = "preprocess/icd10cm_to_ccs.csv"
+
+def load_icd2ccs(path):
+
+    icd10_to_ccs = pd.read_csv(path)
+    icd10_to_ccs = icd10_to_ccs.append({"ICD10CM": "OPTUM_DIAGMAP_KEY_ERROR_UNK",
+                                        "CCS": -1},
+                                        ignore_index=True)
+
+    ccs_dummies = pd.get_dummies(icd10_to_ccs["CCS"])
+    ccs_codes = list(ccs_dummies)
+
+    icd10_to_ccs["CCS"] = list(sparse.csr_matrix(ccs_dummies))
+    icd10_to_ccs = icd10_to_ccs.set_index("ICD10CM")
+
+    assert len(set(icd10_to_ccs[CCS].apply(lambda x: x.shape))) == 1
+    return icd10_to_ccs, ccs_codes
 
 
 def onehot_sparseify(series, get_features=False):
