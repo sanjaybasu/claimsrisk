@@ -11,8 +11,75 @@ import numpy as np
 AGE_CUTOFFS = [25, 35, 45, 55, 60, 65]
 NUM_AGE_BUCKETS = len(AGE_CUTOFFS)
 ccs_path = "preprocess/icd10cm_to_ccs.csv"
+sdh_table = "preprocess/sdh_variables.csv"
+SDH2NORM = {"population_african": ("population_norm", "Population African American, %"),
+            "population_asian": ("population_norm", "Population Asian, %"),
+            "population_hispanic": ("population_norm", "Population Hispanic or Latino, %"),
+            "population_native": ("population_norm", "Population American Indian and Alaska Native, %"),
+            "population_white": ("population_norm", "Population White, %"),
+            "parents": ("parents_norm", "Families with Single Parent, %"),
+            "english": ("english_norm", "Population Speak English Less than \"Very Well\", %"),
+            "household": (None, "Median Income in the Past 12 Months, $"),
+            "highschool": ("education_norm", "Population Obtained High School Diploma, %"),
+            "bachelors": ("education_norm", "Population Obtained Bachelor's Degree, %"),
+            "poverty_50": ("poverty_norm", "Families Under 0.5 Ratio of Income to Poverty Level in the Past 12 Months, %"),
+            "poverty_75": ("poverty_norm", "Families Between 0.5 and 0.74 Ratio of Income to Poverty Level in the Past 12 Months, %"),
+            "poverty_99": ("poverty_norm", "Families Between 0.75 and 0.99 Ratio of Income to Poverty Level in the Past 12 Months, %"),
+            "food": ("food_norm", "Families Received Food Stamps/Snap in the Past 12 months, %"),
+            "woHealth": ("woHealth_norm", "Population Without Health Insurance Coverage, %"),
+            "unemployment": ("unemployment_norm", "Population Unemployed, %"),
+            "gini": (None, "Gini Index of Income Inequality")}
 
-def sex_age_bucketer(age, sex):
+def load_sdh_table():
+    """Loads the output of acs_query.R (at SDH_TABLE), aggregates from geoid to zip,
+    then normalizes using the normalizers defined in constants (SDH2NORM).
+    Additionally adds a row for unknown zip codes and a column to indicate this."""
+
+    sdh_table = pd.read_csv(sdh_table, dtype={'zip': str})
+    sdh_table.rename(columns={'zip': 'Zipcode_5'},
+                     inplace=True)
+
+    for sdh_var, (sdh_norm, _) in SDH2NORM.items():
+        if sdh_norm:
+            sdh_table[sdh_var] = sdh_table[sdh_var] / sdh_table[sdh_norm]
+
+    sdh_table = sdh_table[list(SDH2NORM.keys()) + ['Zipcode_5']]
+
+    median_sdh = sdh_table.median()
+    sdh_table.fillna(median_sdh, inplace=True)
+
+    # Convert ZIP to int
+    sdh_table['Zipcode_5'] = sdh_table['Zipcode_5'].astype(float).astype(int)
+
+    # Add column where unknown zip is 1 and known zips are 0
+    sdh_table['OPTUM_ZIP_UNK'] = 0
+
+    # Add row where unknown zip corresponds to median sdh
+    median_df = pd.DataFrame(median_sdh).T
+    median_df['Zipcode_5'] = OPTUM_ZIP_UNK_KEY
+    median_df['OPTUM_ZIP_UNK'] = 1
+    sdh_table = sdh_table.append(median_df).reset_index(drop=True)
+
+    return sdh_table
+
+
+def load_sdh():
+   sdh_table = load_sdh_table()
+
+		sdh_zips = sdh_table['Zipcode_5']
+		sdh_table.set_index('Zipcode_5', inplace=True)
+
+		# Replace unfound zips in exploded_member_df
+		exploded_member_df['Zipcode_5'] = \
+				exploded_member_df['Zipcode_5'].where(
+						exploded_member_df['Zipcode_5'].isin(sdh_zips),
+						-99999)
+
+		exploded_member_df = \
+				exploded_member_df.merge(sdh_table, on=['Zipcode_5']) 
+
+
+def load_age_sex(age, sex):
     """Assign an index of an age-sex bucket to an age and sex.
     F [0, 2) is index 0.
     F [2, 6) is index 1.
