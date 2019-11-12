@@ -63,22 +63,6 @@ def load_sdh_table():
     return sdh_table
 
 
-def load_sdh():
-   sdh_table = load_sdh_table()
-
-		sdh_zips = sdh_table['Zipcode_5']
-		sdh_table.set_index('Zipcode_5', inplace=True)
-
-		# Replace unfound zips in exploded_member_df
-		exploded_member_df['Zipcode_5'] = \
-				exploded_member_df['Zipcode_5'].where(
-						exploded_member_df['Zipcode_5'].isin(sdh_zips),
-						-99999)
-
-		exploded_member_df = \
-				exploded_member_df.merge(sdh_table, on=['Zipcode_5']) 
-
-
 def load_age_sex(age, sex):
     """Assign an index of an age-sex bucket to an age and sex.
     F [0, 2) is index 0.
