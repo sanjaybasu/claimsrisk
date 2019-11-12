@@ -9,8 +9,11 @@ import lightgbm as lgb
 from preprocess import *
 
 def preprocess(csv_path):
-    df = pd.read_csv(csv_path)
+    df = pd.read_csv(csv_path,
+                     dtype={AGE: int})
 
+    # (Num patients, 12) sparse matrix
+    sex_age_features = get_sex_age_features(df)
     import pdb
     pdb.set_trace()
 
