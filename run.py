@@ -6,9 +6,16 @@ import pickle
 from lightgbm.sklearn import LGBMRegressor
 import lightgbm as lgb
 
+from preprocess import *
+
 def preprocess(csv_path):
     df = pd.read_csv(csv_path)
 
+    import pdb
+    pdb.set_trace()
+
+    load_icd2ccs()
+    
     return df
 
 
