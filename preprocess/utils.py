@@ -96,7 +96,7 @@ def load_icd2ccs(path):
     icd10_to_ccs["CCS"] = list(sparse.csr_matrix(ccs_dummies))
     icd10_to_ccs = icd10_to_ccs.set_index("ICD10CM")
 
-    assert len(set(icd10_to_ccs[CCS].apply(lambda x: x.shape))) == 1
+    assert len(set(icd10_to_ccs["CCS"].apply(lambda x: x.shape))) == 1
     return icd10_to_ccs, ccs_codes
 
 
