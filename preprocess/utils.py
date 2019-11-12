@@ -7,7 +7,6 @@ import scipy.sparse as sparse
 import dask.dataframe as dd
 import numpy as np
 
-
 AGE_CUTOFFS = [25, 35, 45, 55, 60, 65]
 NUM_AGE_BUCKETS = len(AGE_CUTOFFS)
 ccs_path = "preprocess/icd10cm_to_ccs.csv"
@@ -29,6 +28,42 @@ SDH2NORM = {"population_african": ("population_norm", "Population African Americ
             "woHealth": ("woHealth_norm", "Population Without Health Insurance Coverage, %"),
             "unemployment": ("unemployment_norm", "Population Unemployed, %"),
             "gini": (None, "Gini Index of Income Inequality")}
+OPTUM_ZIPCODE = "Zipcode_5"
+OPTUM_ZIP_UNK_KEY = -99999
+SDH_TABLE = "sdh_variables.csv"
+
+
+def load_and_normalize_sdh():
+    """Loads the output of acs_query.R (at SDH_TABLE), aggregates from geoid to zip,
+    then normalizes using the normalizers defined in constants (SDH2NORM).
+    Additionally adds a row for unknown zip codes and a column to indicate this."""
+
+    sdh_table = pd.read_csv(SDH_TABLE, dtype={'zip': str})
+    sdh_table.rename(columns={'zip': OPTUM_ZIPCODE},
+                     inplace=True)
+
+    for sdh_var, (sdh_norm, _) in SDH2NORM.items():
+        if sdh_norm:
+            sdh_table[sdh_var] = sdh_table[sdh_var] / sdh_table[sdh_norm]
+
+    sdh_table = sdh_table[list(SDH2NORM.keys()) + [OPTUM_ZIPCODE]]
+
+    median_sdh = sdh_table.median()
+    sdh_table.fillna(median_sdh, inplace=True)
+
+    # Convert ZIP to int
+    sdh_table[OPTUM_ZIPCODE] = sdh_table[OPTUM_ZIPCODE].astype(float).astype(int)
+
+    # Add column where unknown zip is 1 and known zips are 0
+    sdh_table[OPTUM_ZIP_UNK] = 0
+
+    # Add row where unknown zip corresponds to median sdh
+    median_df = pd.DataFrame(median_sdh).T
+    median_df[OPTUM_ZIPCODE] = OPTUM_ZIP_UNK_KEY
+    median_df[OPTUM_ZIP_UNK] = 1
+    sdh_table = sdh_table.append(median_df).reset_index(drop=True)
+
+    return sdh_table
 
 def load_sdh_table():
     """Loads the output of acs_query.R (at SDH_TABLE), aggregates from geoid to zip,
