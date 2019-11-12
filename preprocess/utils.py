@@ -2,9 +2,7 @@
 from datetime import datetime, date
 from dateutil.relativedelta import relativedelta
 import pandas as pd
-import pyarrow as pa
 import scipy.sparse as sparse
-import dask.dataframe as dd
 import numpy as np
 
 AGE_CUTOFFS = [25, 35, 45, 55, 60, 65]
@@ -30,7 +28,8 @@ SDH2NORM = {"population_african": ("population_norm", "Population African Americ
             "gini": (None, "Gini Index of Income Inequality")}
 OPTUM_ZIPCODE = "Zipcode_5"
 OPTUM_ZIP_UNK_KEY = -99999
-SDH_TABLE = "sdh_variables.csv"
+OPTUM_ZIP_UNK = 'OPTUM_ZIP_UNK'
+SDH_TABLE = "./preprocess/sdh_variables.csv"
 
 
 def load_and_normalize_sdh():
@@ -98,20 +97,20 @@ def load_sdh_table():
     return sdh_table
 
 
-def load_sdh():
-   sdh_table = load_sdh_table()
+# def load_sdh():
+#    sdh_table = load_sdh_table()
 
-		sdh_zips = sdh_table['Zipcode_5']
-		sdh_table.set_index('Zipcode_5', inplace=True)
+#     sdh_zips = sdh_table['Zipcode_5']
+#     sdh_table.set_index('Zipcode_5', inplace=True)
 
-		# Replace unfound zips in exploded_member_df
-		exploded_member_df['Zipcode_5'] = \
-				exploded_member_df['Zipcode_5'].where(
-						exploded_member_df['Zipcode_5'].isin(sdh_zips),
-						-99999)
+#     # Replace unfound zips in exploded_member_df
+#     exploded_member_df['Zipcode_5'] = \
+#             exploded_member_df['Zipcode_5'].where(
+#                     exploded_member_df['Zipcode_5'].isin(sdh_zips),
+#                     -99999)
 
-		exploded_member_df = \
-				exploded_member_df.merge(sdh_table, on=['Zipcode_5']) 
+#     exploded_member_df = \
+#             exploded_member_df.merge(sdh_table, on=['Zipcode_5']) 
 
 
 def load_age_sex(age, sex):
