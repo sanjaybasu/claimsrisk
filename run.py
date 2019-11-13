@@ -14,7 +14,6 @@ def preprocess(csv_path, sdh):
     # Join and merge with SDH
     if sdh:
         sdh_table = load_and_normalize_sdh()
-        med_row = sdh_table.median(axis=0)
         nf = ~df['Zipcode'].isin(sdh_table['Zipcode_5'])
         print(f"Warning: {len(df[nf])} patients have unknown zip codes!")
         df.at[nf, 'Zipcode'] = OPTUM_ZIP_UNK_KEY
