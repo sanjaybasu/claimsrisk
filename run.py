@@ -26,9 +26,9 @@ def main(args):
     model_path = Path(args.model_path)
     csv_path = Path(args.csv_path)
 
-    # model = lgb.Booster(model_file=args.model_path)
+    model = lgb.Booster(model_file=args.model_path)
     user_input = preprocess(csv_path, args.sdh)
-    # prediction = model.predict(user_input)
+    prediction = model.predict(user_input)
     print(f'Predicted cost: {prediction}')
 
 
