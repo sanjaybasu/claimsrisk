@@ -2,11 +2,9 @@
 from datetime import datetime, date
 from dateutil.relativedelta import relativedelta
 import pandas as pd
-import pyarrow as pa
 import scipy.sparse as sparse
-import dask.dataframe as dd
 import numpy as np
-
+import scipy as sp
 
 AGE_CUTOFFS = [25, 35, 45, 55, 60, 65]
 NUM_AGE_BUCKETS = len(AGE_CUTOFFS)
@@ -31,35 +29,40 @@ SDH2NORM = {"population_african": ("population_norm", "Population African Americ
             "woHealth": ("woHealth_norm", "Population Without Health Insurance Coverage, %"),
             "unemployment": ("unemployment_norm", "Population Unemployed, %"),
             "gini": (None, "Gini Index of Income Inequality")}
+OPTUM_ZIPCODE = "Zipcode_5"
+OPTUM_ZIP_UNK_KEY = -99999
+OPTUM_ZIP_UNK = 'OPTUM_ZIP_UNK'
+SDH_TABLE = "./preprocess/sdh_variables.csv"
 
-def load_sdh_table():
+
+def load_and_normalize_sdh():
     """Loads the output of acs_query.R (at SDH_TABLE), aggregates from geoid to zip,
     then normalizes using the normalizers defined in constants (SDH2NORM).
     Additionally adds a row for unknown zip codes and a column to indicate this."""
 
-    sdh_table = pd.read_csv(sdh_table, dtype={'zip': str})
-    sdh_table.rename(columns={'zip': 'Zipcode_5'},
+    sdh_table = pd.read_csv(SDH_TABLE, dtype={'zip': str})
+    sdh_table.rename(columns={'zip': OPTUM_ZIPCODE},
                      inplace=True)
 
     for sdh_var, (sdh_norm, _) in SDH2NORM.items():
         if sdh_norm:
             sdh_table[sdh_var] = sdh_table[sdh_var] / sdh_table[sdh_norm]
 
-    sdh_table = sdh_table[list(SDH2NORM.keys()) + ['Zipcode_5']]
+    sdh_table = sdh_table[list(SDH2NORM.keys()) + [OPTUM_ZIPCODE]]
 
     median_sdh = sdh_table.median()
     sdh_table.fillna(median_sdh, inplace=True)
 
     # Convert ZIP to int
-    sdh_table['Zipcode_5'] = sdh_table['Zipcode_5'].astype(float).astype(int)
+    sdh_table[OPTUM_ZIPCODE] = sdh_table[OPTUM_ZIPCODE].astype(float).astype(int)
 
     # Add column where unknown zip is 1 and known zips are 0
-    sdh_table['OPTUM_ZIP_UNK'] = 0
+    sdh_table[OPTUM_ZIP_UNK] = 0
 
     # Add row where unknown zip corresponds to median sdh
     median_df = pd.DataFrame(median_sdh).T
-    median_df['Zipcode_5'] = OPTUM_ZIP_UNK_KEY
-    median_df['OPTUM_ZIP_UNK'] = 1
+    median_df[OPTUM_ZIPCODE] = OPTUM_ZIP_UNK_KEY
+    median_df[OPTUM_ZIP_UNK] = 1
     sdh_table = sdh_table.append(median_df).reset_index(drop=True)
 
     return sdh_table
@@ -122,8 +125,32 @@ def load_icd2ccs(path):
     icd10_to_ccs["CCS"] = list(sparse.csr_matrix(ccs_dummies))
     icd10_to_ccs = icd10_to_ccs.set_index("ICD10CM")
 
-    assert len(set(icd10_to_ccs[CCS].apply(lambda x: x.shape))) == 1
+    assert len(set(icd10_to_ccs["CCS"].apply(lambda x: x.shape))) == 1
     return icd10_to_ccs, ccs_codes
+
+
+def get_diag_features(df):
+    # explode out ICD10
+    icd = df['ICD10'].str.split(",")
+    icd = icd.apply(pd.Series)
+    icd['patid'] = icd.index
+    icd = icd.melt(id_vars='patid').drop(['variable'], axis=1)
+    icd = icd.rename({'value':"ICD10CM"}, axis=1)
+    icd = icd[~icd['ICD10CM'].isna()]
+    icd['ICD10CM'] = icd['ICD10CM'].str.replace(".", "")
+
+    # convert to CCS
+    icd2ccs, diag_names = load_icd2ccs('preprocess/icd10cm_to_ccs.csv')
+    icd10codes = icd2ccs.index
+    icd['ICD10CM'].where(icd['ICD10CM'].isin(icd10codes), "OPTUM_DIAGMAP_KEY_ERROR_UNK", inplace=True)
+    icd['CCS'] = icd2ccs.loc[icd['ICD10CM']].reset_index(drop=True).values.flatten()
+
+    # aggregate within patients
+    icd = icd.groupby('patid').sum()
+    diag = sp.vstack(icd['CCS'])
+    
+    return diag
+    
 
 
 def onehot_sparseify(series, get_features=False):
