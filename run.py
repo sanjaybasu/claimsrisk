@@ -14,9 +14,11 @@ def preprocess(csv_path, sdh):
     # Join and merge with SDH
     if sdh:
         sdh_table = load_and_normalize_sdh()
-        sdh_table = sdh_table.rename(columns={"Zipcode_5" : "Zipcode"})
-        sdh = sdh_table[sdh_table['Zipcode'].isin(df['Zipcode'])]
-        df = pd.merge(sdh, df, on=['Zipcode'])
+        med_row = sdh_table.median(axis=0)
+        nf = ~df['Zipcode'].isin(sdh_table['Zipcode_5'])
+        print(f"Warning: {len(df[nf])} patients have unknown zip codes!")
+        df.at[nf, 'Zipcode'] = -99999
+        df = pd.merge(sdh_table, df, right_on=['Zipcode'], left_on=['Zipcode_5'], how='right')
 
     return df
 
@@ -24,10 +26,10 @@ def preprocess(csv_path, sdh):
 def main(args):
     model_path = Path(args.model_path)
     csv_path = Path(args.csv_path)
-    
-    model = lgb.Booster(model_file=args.model_path)
+
+    # model = lgb.Booster(model_file=args.model_path)
     user_input = preprocess(csv_path, args.sdh)
-    prediction = model.predict(user_input)
+    # prediction = model.predict(user_input)
     print(f'Predicted cost: {prediction}')
 
 
