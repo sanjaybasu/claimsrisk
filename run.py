@@ -1,47 +1,75 @@
-import csv
-import pickle
 import argparse
 import pandas as pd
 import lightgbm as lgb
 from pathlib import Path
-from lightgbm.sklearn import LGBMRegressor
 
 from preprocess import *
 
 
-def preprocess(csv_path, sdh):
-    df = pd.read_csv(csv_path)
-    
-    # (Num patients, 12) sparse matrix
-    sex_age_features = get_sex_age_features(df)
-    
-    # Diagnosis
-    diag_features = get_diag_features(df)
+def preprocess(df):
 
-    # Join and merge with SDH
-    if sdh:
-        sdh_table = load_and_normalize_sdh()
-        nf = ~df['Zipcode'].isin(sdh_table['Zipcode_5'])
-        print(f"Warning: {len(df[nf])} patients have unknown zip codes!")
-        df.at[nf, 'Zipcode'] = OPTUM_ZIP_UNK_KEY
-        df = pd.merge(sdh_table, df, right_on=['Zipcode'],
-                      left_on=['Zipcode_5'], how='right')
+    features_list = []
+    
+    # (Num patients, 12)
+    sex_age_features = get_sex_age_features(df)
+    features_list.append(sex_age_features)
+    
+    # (Num patients, 284)
+    diag_features = get_diag_features(df)
+    features_list.append(diag_features)
+
+    if ZIPCODE in df.columns:
+        # (Num patients, 18)
+        sdh_features = get_sdh_features(df)
+        features_list.append(sdh_features)
+
+    all_features = sparse.hstack(features_list, format="csr")
+
+    return all_features
 
 
 def main(args):
+    # Load the model.
     model_path = Path(args.model_path)
-    csv_path = Path(args.csv_path)
-
     model = lgb.Booster(model_file=args.model_path)
-    user_input = preprocess(csv_path, args.sdh)
-    prediction = model.predict(user_input)
-    print(f'Predicted cost: {prediction}')
+
+    # Load the data.
+    csv_path = Path(args.csv_path)
+    df = pd.read_csv(csv_path)
+    data = preprocess(df)
+
+    data_num_predictors = data.shape[1]
+    model_num_predictors = model.num_feature()
+    if model_num_predictors != data_num_predictors:
+        raise ValueError(f"Model expects {model_num_predictors} predictors," +
+                         f"Got {data_num_predictors} predictors.")
+
+    # Run the model.
+    prediction = np.clip(model.predict(data), 0, 400000) + COST_ADJUSTMENT
+    patient_costs = list(zip(df[PATIENT], prediction))
+    print("Patient\tCost")
+    for patient, cost in patient_costs:
+        print(f"{patient}\t{cost}")
+    print()
+    
+    print(f"Saving predicted cost data to {args.save_path}.")
+    costs_df = pd.DataFrame(patient_costs,
+                            columns=[PATIENT, "Cost"])
+    costs_df.to_csv(args.save_path, index=False)
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='ML for Risk Adjustment')
-    parser.add_argument('--csv_path', required=True, type=str, help='Path to csv location',)
-    parser.add_argument('--model_path', default='model.txt', type=str, help='Path to csv location')
-    parser.add_argument('--save_path', default=None, type=str, help='Path to save location')
-    parser.add_argument('--sdh', action='store_true', help='Predict with SDH')
+    parser.add_argument('--csv_path',
+                        required=True,
+                        type=str,
+                        help='Path to csv with patient information.',)
+    parser.add_argument('--model_path',
+                        default='model.txt',
+                        type=str,
+                        help='Path to model file.')
+    parser.add_argument('--save_path',
+                        default="costs.csv",
+                        type=str,
+                        help='Path to output save file.')
     main(parser.parse_args())
