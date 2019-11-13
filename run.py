@@ -1,15 +1,19 @@
-import argparse
 import csv
-import pandas as pd
-from pathlib import Path
 import pickle
-from lightgbm.sklearn import LGBMRegressor
+import argparse
+import pandas as pd
 import lightgbm as lgb
+from pathlib import Path
+from lightgbm.sklearn import LGBMRegressor
 
-from preprocess.utils import load_and_normalize_sdh, OPTUM_ZIP_UNK_KEY 
+from preprocess import *
+
 
 def preprocess(csv_path, sdh):
     df = pd.read_csv(csv_path)
+    
+    # Diagnosis
+    diag = get_diag_features(df)
 
     # Join and merge with SDH
     if sdh:
@@ -17,9 +21,8 @@ def preprocess(csv_path, sdh):
         nf = ~df['Zipcode'].isin(sdh_table['Zipcode_5'])
         print(f"Warning: {len(df[nf])} patients have unknown zip codes!")
         df.at[nf, 'Zipcode'] = OPTUM_ZIP_UNK_KEY
-        df = pd.merge(sdh_table, df, right_on=['Zipcode'], left_on=['Zipcode_5'], how='right')
-
-    return df
+        df = pd.merge(sdh_table, df, right_on=['Zipcode'],
+                      left_on=['Zipcode_5'], how='right')
 
 
 def main(args):

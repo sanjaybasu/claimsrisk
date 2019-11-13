@@ -4,6 +4,7 @@ from dateutil.relativedelta import relativedelta
 import pandas as pd
 import scipy.sparse as sparse
 import numpy as np
+import scipy as sp
 
 AGE_CUTOFFS = [25, 35, 45, 55, 60, 65]
 NUM_AGE_BUCKETS = len(AGE_CUTOFFS)
@@ -98,8 +99,32 @@ def load_icd2ccs(path):
     icd10_to_ccs["CCS"] = list(sparse.csr_matrix(ccs_dummies))
     icd10_to_ccs = icd10_to_ccs.set_index("ICD10CM")
 
-    assert len(set(icd10_to_ccs[CCS].apply(lambda x: x.shape))) == 1
+    assert len(set(icd10_to_ccs["CCS"].apply(lambda x: x.shape))) == 1
     return icd10_to_ccs, ccs_codes
+
+
+def get_diag_features(df):
+    # explode out ICD10
+    icd = df['ICD10'].str.split(",")
+    icd = icd.apply(pd.Series)
+    icd['patid'] = icd.index
+    icd = icd.melt(id_vars='patid').drop(['variable'], axis=1)
+    icd = icd.rename({'value':"ICD10CM"}, axis=1)
+    icd = icd[~icd['ICD10CM'].isna()]
+    icd['ICD10CM'] = icd['ICD10CM'].str.replace(".", "")
+
+    # convert to CCS
+    icd2ccs, diag_names = load_icd2ccs('preprocess/icd10cm_to_ccs.csv')
+    icd10codes = icd2ccs.index
+    icd['ICD10CM'].where(icd['ICD10CM'].isin(icd10codes), "OPTUM_DIAGMAP_KEY_ERROR_UNK", inplace=True)
+    icd['CCS'] = icd2ccs.loc[icd['ICD10CM']].reset_index(drop=True).values.flatten()
+
+    # aggregate within patients
+    icd = icd.groupby('patid').sum()
+    diag = sp.vstack(icd['CCS'])
+    
+    return diag
+    
 
 
 def onehot_sparseify(series, get_features=False):
