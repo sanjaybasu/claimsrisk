@@ -12,8 +12,11 @@ from preprocess import *
 def preprocess(csv_path, sdh):
     df = pd.read_csv(csv_path)
     
+    # (Num patients, 12) sparse matrix
+    sex_age_features = get_sex_age_features(df)
+    
     # Diagnosis
-    diag = get_diag_features(df)
+    diag_features = get_diag_features(df)
 
     # Join and merge with SDH
     if sdh:

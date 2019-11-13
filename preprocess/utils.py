@@ -8,6 +8,8 @@ import scipy as sp
 
 AGE_CUTOFFS = [25, 35, 45, 55, 60, 65]
 NUM_AGE_BUCKETS = len(AGE_CUTOFFS)
+AGE = "Age"
+SEX = "Sex"
 ccs_path = "preprocess/icd10cm_to_ccs.csv"
 sdh_table = "preprocess/sdh_variables.csv"
 SDH2NORM = {"population_african": ("population_norm", "Population African American, %"),
@@ -66,7 +68,7 @@ def load_and_normalize_sdh():
     return sdh_table
 
 
-def load_age_sex(age, sex):
+def sex_age_bucketer(age, sex):
     """Assign an index of an age-sex bucket to an age and sex.
     F [0, 2) is index 0.
     F [2, 6) is index 1.
@@ -74,16 +76,40 @@ def load_age_sex(age, sex):
     M [0, 2) is index num_age_buckets
     M [2, 6) is index num_age_buckets + 1
     ...
-    age is between 0 and 94, sex is either 0 (female) or 1 (male).
+    age is between 0 and 94, sex is either F (female) or M (male).
     """
     index = 0
+    if sex == "F":
+        sex_num = 0
+    elif sex == "M":
+        sex_num = 1
+    else:
+        raise ValueError(f"Sex {sex} not supported.")
     for age_cutoff in AGE_CUTOFFS:
         if age < age_cutoff:
-            return index + sex * NUM_AGE_BUCKETS
+            return index + sex_num * NUM_AGE_BUCKETS
         index += 1
 
     print("Warning: Age outside of [0, 95). Treating as final age bucket.")
     return (index - 1) + sex * NUM_AGE_BUCKETS
+
+
+def get_sex_age_features(split):
+    """Get age-sex features as done in 2017 risk adjusment model
+    and Ash et al."""
+    age_sex_cols = [AGE, SEX]
+    sex_age_bucket = \
+        split[age_sex_cols].apply(lambda row: sex_age_bucketer(row[AGE],
+                                                               row[SEX]),
+                                  axis=1)
+    # There are 2*len(age sex bucket cutoffs). each cutoff defines one bucket,
+    # and each sex has its buckets (hence the times 2).
+    sex_age_d = pd.Categorical(sex_age_bucket,
+                               categories=list(range(2 * NUM_AGE_BUCKETS)))
+
+    sex_age_matrix = onehot_sparseify(sex_age_d)
+
+    return sex_age_matrix
 
 
 def load_icd2ccs(path):
