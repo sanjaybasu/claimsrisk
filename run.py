@@ -1,7 +1,6 @@
 import argparse
 import csv
 import pandas as pd
-import scipy as sp
 from pathlib import Path
 import pickle
 from lightgbm.sklearn import LGBMRegressor
@@ -13,24 +12,9 @@ def preprocess(csv_path):
     df = pd.read_csv(csv_path)
 
     # Diagnosis
-    # explode out ICD10
-    icd = df['ICD10'].str.split(",")
-    icd = icd.apply(pd.Series)
-    icd['patid'] = icd.index
-    icd = icd.melt(id_vars='patid').drop(['variable'], axis=1)
-    icd = icd.rename({'value':"ICD10CM"}, axis=1)
-    icd = icd[~icd['ICD10CM'].isna()]
-    icd['ICD10CM'] = icd['ICD10CM'].str.replace(".", "")
-
-    # convert to CCS
-    icd2ccs, diag_names = load_icd2ccs(Path('preprocess/icd10cm_to_ccs.csv'))
-    icd10codes = icd2ccs.index
-    icd['ICD10CM'].where(icd['ICD10CM'].isin(icd10codes), "OPTUM_DIAGMAP_KEY_ERROR_UNK", inplace=True)
-    icd['CCS'] = icd2ccs.loc[icd['ICD10CM']].reset_index(drop=True).values.flatten()
-
-    # aggregate within patients
-    icd = icd.groupby('patid').sum()
-    diag = sp.vstack(icd['CCS'])
+    diag = get_diag_features(df)
+    import pdb
+    pdb.set_trace()
 
     return df
 
