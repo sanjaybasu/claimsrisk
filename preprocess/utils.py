@@ -64,54 +64,6 @@ def load_and_normalize_sdh():
 
     return sdh_table
 
-def load_sdh_table():
-    """Loads the output of acs_query.R (at SDH_TABLE), aggregates from geoid to zip,
-    then normalizes using the normalizers defined in constants (SDH2NORM).
-    Additionally adds a row for unknown zip codes and a column to indicate this."""
-
-    sdh_table = pd.read_csv(sdh_table, dtype={'zip': str})
-    sdh_table.rename(columns={'zip': 'Zipcode_5'},
-                     inplace=True)
-
-    for sdh_var, (sdh_norm, _) in SDH2NORM.items():
-        if sdh_norm:
-            sdh_table[sdh_var] = sdh_table[sdh_var] / sdh_table[sdh_norm]
-
-    sdh_table = sdh_table[list(SDH2NORM.keys()) + ['Zipcode_5']]
-
-    median_sdh = sdh_table.median()
-    sdh_table.fillna(median_sdh, inplace=True)
-
-    # Convert ZIP to int
-    sdh_table['Zipcode_5'] = sdh_table['Zipcode_5'].astype(float).astype(int)
-
-    # Add column where unknown zip is 1 and known zips are 0
-    sdh_table['OPTUM_ZIP_UNK'] = 0
-
-    # Add row where unknown zip corresponds to median sdh
-    median_df = pd.DataFrame(median_sdh).T
-    median_df['Zipcode_5'] = OPTUM_ZIP_UNK_KEY
-    median_df['OPTUM_ZIP_UNK'] = 1
-    sdh_table = sdh_table.append(median_df).reset_index(drop=True)
-
-    return sdh_table
-
-
-# def load_sdh():
-#    sdh_table = load_sdh_table()
-
-#     sdh_zips = sdh_table['Zipcode_5']
-#     sdh_table.set_index('Zipcode_5', inplace=True)
-
-#     # Replace unfound zips in exploded_member_df
-#     exploded_member_df['Zipcode_5'] = \
-#             exploded_member_df['Zipcode_5'].where(
-#                     exploded_member_df['Zipcode_5'].isin(sdh_zips),
-#                     -99999)
-
-#     exploded_member_df = \
-#             exploded_member_df.merge(sdh_table, on=['Zipcode_5']) 
-
 
 def load_age_sex(age, sex):
     """Assign an index of an age-sex bucket to an age and sex.
