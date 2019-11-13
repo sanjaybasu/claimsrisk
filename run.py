@@ -11,11 +11,11 @@ from preprocess import *
 def preprocess(csv_path):
     df = pd.read_csv(csv_path)
 
+    # Diagnosis
+    diag = get_diag_features(df)
     import pdb
     pdb.set_trace()
 
-    load_icd2ccs()
-    
     return df
 
 
