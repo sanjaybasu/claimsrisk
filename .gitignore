@@ -1,5 +1,6 @@
 ._*
 .DS_Store
+costs.csv
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
