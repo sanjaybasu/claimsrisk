@@ -2,9 +2,9 @@
 
 Code for the paper:
 
-  > Do machine learning and social determinants of health indicators improve healthcare risk adjustment?
+  > Incorporating Machine Learning and Social Determinants of Health Indicators into Prospective Risk Adjustment for Health Plan Payments
   >
-  > Jeremy A. Irvin, Andrew A. Kondrich, Michael Ko, Pranav Rajpurkar, Behzad Haghgoo, Bruce E. Landon, Robert Phillips, Stephen Petterson, Andrew Y. Ng, Sanjay Basu 
+  > Jeremy A. Irvin, Andrew A. Kondrich, Michael Ko, Pranav Rajpurkar, Behzad Haghgoo, Bruce E. Landon, Robert L. Phillips, Stephen Petterson, Andrew Y. Ng, Sanjay Basu 
 
 Given patient demographic and diagnoses information for a collection of patients, predict prospective insurance cost using a trained LightGBM Regression Model as described in our paper.
 
