@@ -1,14 +1,13 @@
 name: ra-ml
 channels:
   - anaconda
-  - r
   - conda-forge
   - defaults
 dependencies:
+  - lightgbm=2.3.0
   - numpy=1.15
   - pandas=0.23.4
   - pip=18.1
-  - rpy2=2.9.3
   - scikit-learn=0.20.0
   - scipy=1.1.0
-  - tqdm=4.29.1
+

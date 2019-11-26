@@ -1,12 +1,12 @@
 ## Machine Learning for Risk Adjustment
 
-Based on the paper:
+Code for the paper:
 
   > Do machine learning and social determinants of health indicators improve healthcare risk adjustment?
   >
   > Jeremy A. Irvin, Andrew A. Kondrich, Michael Ko, Pranav Rajpurkar, Behzad Haghgoo, Bruce E. Landon, Robert Phillips, Stephen Petterson, Andrew Y. Ng, Sanjay Basu 
 
-Includes a script `preprocess.py` to transform CSV files containing demographic and diagnoses information into processed inputs for learning models, and `train.py` which trains a LightGBM model using 3-fold CV on this formatted data.
+Given patient demographic and diagnoses information for a collection of patients, predict prospective insurance cost using a trained LightGBM Regression Model as described in our paper.
 
 ## Usage
 
@@ -18,8 +18,25 @@ Includes a script `preprocess.py` to transform CSV files containing demographic 
 5. Activate the environment: `source activate ra-ml`.
 
 ### Preprocessing
-> Demographics: CSV with Patient ID, Age, Sex, [Optional] ZIP (age is an integer, sex is M/F, ZIP is 5-digit)  Diagnoses: CSV with Patient ID, ICD-10 Diagnosis. One row per diagnosis.
+We format the data in the form of a CSV with columns: Patient (Integer), Age (Integer), Sex (Char: M/F), 5-digit ZIP code (Integer, optional), as well as a list of ICD-10 Diagnoses (Comma-delimited quote string). An optional ZIP column is needed to run the SDH-based model. Each patient should be put on their own row. 
 
-### Modeling
+The following is a toy example CSV:
 
-> X: covariates that can be input to the ML model. Includes SDH if ZIP is provided, and imputes in the same way as we do if ZIP is not found.
+
+| Patient         | Age | Sex | Zipcode | ICD10                 | 
+|-----------------|-----|-----|---------|-----------------------| 
+| 1               | 46  | M   | 95120   | "F32.0,D64.0,D64.81"  | 
+| 2               | 64  | F   | 85001   | "L25.0"               | 
+| 3               | 56  | F   | 72201   | "R10.0,R10.30,R53.81" | 
+| 4               | 18  | M   | 80201   | ""                    |
+| 5               | 50  | F   | 800     | "N15.9,N30.00"        | 
+
+
+### Evaluation
+
+The script can be run in python using the following flags:
+
+`python run.py --csv_path path/to/data --model_path path/to/saved/weights --save_path path/to/save/output`
+
+Including `--sdh` will automatically run the SDH-based model. This requires zipcode data for each patient row. Model weights can be provided upon request.
+
