@@ -10,13 +10,13 @@ def preprocess(df, sdh):
 
     features_list = []
     
-    # (Num patients, 12)
-    sex_age_features = get_sex_age_features(df)
-    features_list.append(sex_age_features)
-    
     # (Num patients, 284)
     diag_features = get_diag_features(df)
     features_list.append(diag_features)
+
+    # (Num patients, 12)
+    sex_age_features = get_sex_age_features(df)
+    features_list.append(sex_age_features)
 
     if sdh:
         if ZIPCODE not in df.columns:
