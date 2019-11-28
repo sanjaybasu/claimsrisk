@@ -68,7 +68,7 @@ if __name__ == '__main__':
                         type=str,
                         help='Path to csv with patient information.',)
     parser.add_argument('--model_path',
-                        default='model.txt',
+                        default='ml_model_nosdh.txt',
                         type=str,
                         help='Path to model file.')
     parser.add_argument('--save_path',
